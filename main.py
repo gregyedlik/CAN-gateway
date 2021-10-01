@@ -1,18 +1,27 @@
 import can
 import threading
 import pickle
+import time
+import os
 
-bus1 = can.Bus(channel='can0',
+os.system('echo ncr18650b | sudo -S ./CAN_ON')
+
+channels = ['can0', 'can1']
+buses = [can.Bus(channel=ch,
                interface='socketcan',  # noqa
                bitrate=500000,  # noqa
                recevie_own_messages=False)  # noqa
-bus1.flush_tx_buffer()
+         for ch in channels]
 
-bus2 = can.Bus(channel='can1',
-               interface='socketcan',  # noqa
-               bitrate=500000,  # noqa
-               recevie_own_messages=False)  # noqa
-bus2.flush_tx_buffer()
+print('Emptying read buffers...')
+for bus in buses:
+    bus.flush_tx_buffer()
+    msg = bus.recv(0.1)
+    while type(msg) == can.Message:
+        print(msg)
+        msg = bus.recv(0.1)
+
+print('Read buffers empty.')
 
 captured = list()
 
@@ -22,17 +31,17 @@ def forwarder(source, destination):
         print(msg)
         destination.send(msg)
         captured.append(msg)
-        if len(captured) > 10000:
-            return
 
 
-t1 = threading.Thread(target=forwarder, args=(bus1, bus2))
-t2 = threading.Thread(target=forwarder, args=(bus2, bus1))
+t1 = threading.Thread(target=forwarder, args=(buses[0], buses[1]))
+t2 = threading.Thread(target=forwarder, args=(buses[1], buses[0]))
 
-t1.start()
-t2.start()
+threads = [t1, t2]
 
-t1.join()
-t2.join()
+for t in threads:
+    t.start()
+
+while len(captured) < 5000:
+    time.sleep(1)
 
 pickle.dump(captured, open("captured.p", "wb"))
