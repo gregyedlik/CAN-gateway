@@ -1,4 +1,3 @@
-import can
 import pickle
 import pandas
 

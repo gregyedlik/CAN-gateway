@@ -2,40 +2,37 @@ import can
 import threading
 import pickle
 
-busM = can.Bus(channel='can0',
+bus1 = can.Bus(channel='can0',
                interface='socketcan',  # noqa
                bitrate=500000,  # noqa
                recevie_own_messages=False)  # noqa
+bus1.flush_tx_buffer()
 
-busK = can.Bus(channel='can1',
+bus2 = can.Bus(channel='can1',
                interface='socketcan',  # noqa
                bitrate=500000,  # noqa
                recevie_own_messages=False)  # noqa
+bus2.flush_tx_buffer()
 
 captured = list()
 
 
-def battery2bike():
-    for msg in busM:
+def forwarder(source, destination):
+    for msg in source:
         print(msg)
+        destination.send(msg)
         captured.append(msg)
-        busK.send(msg)
-
         if len(captured) > 10000:
-            break
+            return
 
 
-def bike2battery():
-    for msg in busK:
-        print(msg)
-        captured.append(msg)
-        busM.send(msg)
+t1 = threading.Thread(target=forwarder, args=(bus1, bus2))
+t2 = threading.Thread(target=forwarder, args=(bus2, bus1))
 
-        if len(captured) > 10000:
-            break
+t1.start()
+t2.start()
 
+t1.join()
+t2.join()
 
-threading.Thread(target=battery2bike).start()
-threading.Thread(target=bike2battery).start()
-
-pickle.dump(open("capture.p", "wb"))
+pickle.dump(captured, open("captured.p", "wb"))
