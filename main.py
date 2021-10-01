@@ -1,5 +1,6 @@
 import can
 import threading
+import pickle
 
 busM = can.Bus(channel='can0',
                interface='socketcan',  # noqa
@@ -37,11 +38,4 @@ def bike2battery():
 threading.Thread(target=battery2bike).start()
 threading.Thread(target=bike2battery).start()
 
-idsFromBattery = [msg.arbitration_id for msg in captured if msg.channel == 'can0']
-idsFromBattery = list(dict.fromkeys(idsFromBattery))
-
-idsFromBike = [msg.arbitration_id for msg in captured if msg.channel == 'can1']
-idsFromBike = list(dict.fromkeys(idsFromBike))
-
-for ID in idsFromBike:
-    print(hex(ID))
+pickle.dump(open("capture.p", "wb"))
