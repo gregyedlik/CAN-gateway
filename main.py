@@ -5,6 +5,10 @@ import time
 import os
 import analyse
 
+runForever = True
+verbose = False
+record = False
+
 os.system('echo ncr18650b | sudo -S ./CAN_ON')
 time.sleep(1)
 
@@ -15,6 +19,7 @@ buses = {ch: can.ThreadSafeBus(channel=ch,
                            recevie_own_messages=False)  # noqa
          for ch in channels}
 
+print('')
 print('Emptying read buffers...')
 for bus in buses.values():
     bus.flush_tx_buffer()
@@ -24,6 +29,9 @@ for bus in buses.values():
         m = bus.recv(0.1)
 
 print('Read buffers empty.')
+
+if not verbose:
+    print('Silent mode - messages are not displayed here!')
 
 captured = list()
 run = True
@@ -41,14 +49,19 @@ def forwarder(source, destination):
             else:
                 continue
         destination.send(msg)
-        print(msg)
-        captured.append(msg)
+        if verbose:
+            print(msg)
+        if record and not runForever:
+            captured.append(msg)
         if not run:
             break
 
 
 t1 = threading.Thread(target=forwarder, args=(buses['bike'], buses['battery']))
 t1.name = 'From bike to battery'
+
+buses['battery'].send(can.Message())
+
 t2 = threading.Thread(target=forwarder, args=(buses['battery'], buses['bike']))
 t2.name = 'From battery to bike'
 
@@ -59,8 +72,6 @@ for t in threads:
 
 while len(captured) < 2000:
     time.sleep(0.1)
-
-runForever = True
 
 if not runForever:
     pickle.dump(captured, open("captured.p", "wb"))
