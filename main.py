@@ -27,12 +27,19 @@ print('Read buffers empty.')
 
 captured = list()
 run = True
+ext_sent = False
 
 
 def forwarder(source, destination):
+    global ext_sent
     for msg in source:
-        # if msg.arbitration_id == 0x111:
-        #     msg.data[6] = 30
+        if msg.arbitration_id == 0x088 or msg.is_error_frame:
+            continue
+        if msg.arbitration_id == 0x063D4E7E:
+            if not ext_sent:
+                ext_sent = True
+            else:
+                continue
         destination.send(msg)
         print(msg)
         captured.append(msg)
@@ -53,10 +60,13 @@ for t in threads:
 while len(captured) < 2000:
     time.sleep(0.1)
 
-pickle.dump(captured, open("captured.p", "wb"))
-run = False
-for t in threads:
-    t.join()
+runForever = True
 
-print('Switching off')
-analyse.analyse()
+if not runForever:
+    pickle.dump(captured, open("captured.p", "wb"))
+    analyse.analyse()
+    run = False
+    for t in threads:
+        t.join()
+
+    print('Switching off')
