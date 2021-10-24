@@ -1,15 +1,20 @@
 import pickle
 import pandas
-
+import binascii
 
 def analyse():
     captured = pickle.load(open("captured.p", "rb"))
 
     first_timestamp = captured[0].timestamp
 
-    captured_important = [[hex(msg.arbitration_id), msg.channel, round(msg.timestamp - first_timestamp, 3), bytes(msg.data)] for msg in captured]
-    df_full = pandas.DataFrame(data=captured_important, columns=['arbitration ID', 'source', 'timestamp', 'data'])
-    df_full.to_excel('result_raw.xlsx')
+    captured_important = [[round(msg.timestamp - first_timestamp, 3),
+                           hex(msg.arbitration_id),
+                           msg.channel,
+                           binascii.hexlify(bytes(msg.data)).decode('utf-8')]
+                          for msg in captured]
+    df_full = pandas.DataFrame(data=captured_important, columns=['timestamp', 'arbitration ID', 'source', 'data'])
+    df_exciting = df_full[:300]
+    df_exciting.to_excel('result_raw.xlsx', index=False)
 
     capturedFromBattery = [msg for msg in captured if msg.channel == "battery"]
     capturedFromBike = [msg for msg in captured if msg.channel == "bike"]
@@ -34,4 +39,7 @@ def analyse():
     df = df.transpose()
 
     df.to_excel('results.xlsx')
-    return
+    return df_exciting
+
+
+df = analyse()
