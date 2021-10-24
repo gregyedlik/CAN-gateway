@@ -64,7 +64,7 @@ t1.name = 'From bike to battery'
 
 buses['battery'].send(can.Message())
 
-notImportantForBike = {0x61, 0x063D4E7E, 0xe1, 0x1c}
+notImportantForBike = {0x61, 0x063D4E7E, 0xe1, 0x1c, 0x2aa, 0x101, 0x55, 0x140, 0x1d0, 0xcc, 0xcd, 0x8c, 0x151}
 t2 = threading.Thread(target=forwarder, args=(buses['battery'], buses['bike'], notImportantForBike))
 t2.name = 'From battery to bike'
 
