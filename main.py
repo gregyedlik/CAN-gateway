@@ -6,7 +6,7 @@ import os
 import analyse
 
 runForever = True
-verbose = False
+verbose = True
 record = False
 
 os.system('echo ncr18650b | sudo -S ./CAN_ON')
@@ -38,10 +38,10 @@ run = True
 ext_sent = False
 
 
-def forwarder(source, destination):
+def forwarder(source, destination, blacklist):
     global ext_sent
     for msg in source:
-        if msg.arbitration_id == 0x088 or msg.is_error_frame:
+        if msg.arbitration_id in blacklist or msg.is_error_frame:
             continue
         if msg.arbitration_id == 0x063D4E7E:
             if not ext_sent:
@@ -57,12 +57,14 @@ def forwarder(source, destination):
             break
 
 
-t1 = threading.Thread(target=forwarder, args=(buses['bike'], buses['battery']))
+notImportantForBattery = {0x48, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0x202, 0x205, 0x210, 0x170, 0x131}
+t1 = threading.Thread(target=forwarder, args=(buses['bike'], buses['battery'], notImportantForBattery))
 t1.name = 'From bike to battery'
 
 buses['battery'].send(can.Message())
 
-t2 = threading.Thread(target=forwarder, args=(buses['battery'], buses['bike']))
+notImportantForBike = {0x61, 0x063D4E7E, 0xe1}
+t2 = threading.Thread(target=forwarder, args=(buses['battery'], buses['bike'], notImportantForBike))
 t2.name = 'From battery to bike'
 
 threads = [t1, t2]
@@ -70,12 +72,14 @@ threads = [t1, t2]
 for t in threads:
     t.start()
 
-while len(captured) < 2000:
-    time.sleep(0.1)
+if record:
+    while len(captured) < 2000:
+        time.sleep(0.1)
 
-if not runForever:
     pickle.dump(captured, open("captured.p", "wb"))
     analyse.analyse()
+
+if not runForever:
     run = False
     for t in threads:
         t.join()
