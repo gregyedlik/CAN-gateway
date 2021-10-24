@@ -41,6 +41,8 @@ def forwarder(source, destination, blacklist):
     for msg in source:
         if msg.arbitration_id in blacklist or msg.is_error_frame:
             continue
+        # if msg.arbitration_id == 0x81:
+        #     msg.data[0] = 0x6e
         destination.send(msg)
         if verbose:
             print(msg)
