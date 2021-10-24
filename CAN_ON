@@ -1,0 +1,8 @@
+sudo ip link set battery down
+sudo ip link set bike down
+sudo ip link set battery type can bitrate 500000
+sudo ip link set bike type can bitrate 500000
+sudo ip link set battery type can restart-ms 10000
+sudo ip link set bike type can restart-ms 10000
+sudo ip link set battery up
+sudo ip link set bike up

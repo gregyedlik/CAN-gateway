@@ -5,9 +5,9 @@ import time
 import os
 import analyse
 
-runForever = True
+runForever = False
 verbose = True
-record = False
+record = True
 
 os.system('echo ncr18650b | sudo -S ./CAN_ON')
 time.sleep(1)
@@ -35,19 +35,12 @@ if not verbose:
 
 captured = list()
 run = True
-ext_sent = False
 
 
 def forwarder(source, destination, blacklist):
-    global ext_sent
     for msg in source:
         if msg.arbitration_id in blacklist or msg.is_error_frame:
             continue
-        if msg.arbitration_id == 0x063D4E7E:
-            if not ext_sent:
-                ext_sent = True
-            else:
-                continue
         destination.send(msg)
         if verbose:
             print(msg)
@@ -58,7 +51,8 @@ def forwarder(source, destination, blacklist):
 
 
 notImportantForBattery = {0x48, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0x202, 0x205, 0x210, 0x170, 0x131, 0xC6, 0xBE, 0xA3, 0x3B,
-                          0x37}
+                          0x37, 0x9b, 0x4a, 0x30, 0x203, 0x220, 0x221, 0xa0, 0xa1, 0xa2, 0xa4, 0xa5, 0xa6, 0x9f, 0x88,
+                          0x108, 0x3c, 0xc7, 0x211, 0x210, 0xbc, 0x2c0, 0x2c1, 0x171, 0xbf, 0xbd, 0x59}
 t1 = threading.Thread(target=forwarder, args=(buses['bike'], buses['battery'], notImportantForBattery))
 t1.name = 'From bike to battery'
 
