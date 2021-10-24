@@ -57,13 +57,14 @@ def forwarder(source, destination, blacklist):
             break
 
 
-notImportantForBattery = {0x48, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0x202, 0x205, 0x210, 0x170, 0x131}
+notImportantForBattery = {0x48, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0x202, 0x205, 0x210, 0x170, 0x131, 0xC6, 0xBE, 0xA3, 0x3B,
+                          0x37}
 t1 = threading.Thread(target=forwarder, args=(buses['bike'], buses['battery'], notImportantForBattery))
 t1.name = 'From bike to battery'
 
 buses['battery'].send(can.Message())
 
-notImportantForBike = {0x61, 0x063D4E7E, 0xe1}
+notImportantForBike = {0x61, 0x063D4E7E, 0xe1, 0x1c}
 t2 = threading.Thread(target=forwarder, args=(buses['battery'], buses['bike'], notImportantForBike))
 t2.name = 'From battery to bike'
 
