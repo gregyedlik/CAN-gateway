@@ -2,12 +2,13 @@ import can
 import threading
 import time
 import os
+import pickle
 
 
-os.system('echo ncr18650b | sudo -S ./CAN_ON')
-time.sleep(1)
+# os.system('echo pass | sudo -S ./CAN_ON')
+# time.sleep(1)
 
-channels = ['battery', 'bike']
+channels = ['kvaser', 'microchip']
 buses = {ch: can.ThreadSafeBus(channel=ch,
                            interface='socketcan',  # noqa
                            bitrate=250000,  # noqa
@@ -18,35 +19,48 @@ print('')
 print('Emptying read buffers...')
 for bus in buses.values():
     bus.flush_tx_buffer()
-    m = bus.recv(0.1)
+    m = bus.recv(0.01)
     while type(m) == can.Message:
-        print(m)
-        m = bus.recv(0.1)
+        m = bus.recv(0.01)
 
 print('Read buffers empty.')
+
+captured = list()
+run = True
 
 
 def forwarder(source, destination, blacklist):
     for msg in source:
         if msg.arbitration_id in blacklist or msg.is_error_frame:
             continue
-        # if msg.arbitration_id == 0x81:
-        #     msg.data[0] = 0x6e
         destination.send(msg)
+        captured.append(msg)
         print(msg)
+        if not run:
+            break
 
 
-notImportantForBattery = {}
-t1 = threading.Thread(target=forwarder, args=(buses['bike'], buses['battery'], notImportantForBattery))
+notImportantForBattery = {0x201}
+t1 = threading.Thread(target=forwarder, args=(buses['kvaser'], buses['microchip'], notImportantForBattery))
 t1.name = 'From bike to battery'
 
-buses['battery'].send(can.Message())
+buses['kvaser'].send(can.Message())
 
 notImportantForBike = {}
-t2 = threading.Thread(target=forwarder, args=(buses['battery'], buses['bike'], notImportantForBike))
+t2 = threading.Thread(target=forwarder, args=(buses['microchip'], buses['kvaser'], notImportantForBike))
 t2.name = 'From battery to bike'
 
 threads = [t1, t2]
 
 for t in threads:
     t.start()
+
+while len(captured) < 500:
+    time.sleep(0.1)
+
+pickle.dump(captured, open("captured.p", "wb"))
+run = False
+for t in threads:
+    t.join()
+
+print('Switching off')

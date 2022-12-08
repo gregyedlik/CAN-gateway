@@ -21,8 +21,8 @@ def analyse():
     df_exciting = df_full[:500]
     df_exciting.to_excel('result_raw.xlsx', index=False)
 
-    capturedFromBattery = [msg for msg in captured if msg.channel == "battery"]
-    capturedFromBike = [msg for msg in captured if msg.channel == "bike"]
+    capturedFromBattery = [msg for msg in captured if msg.channel == "kvaser"]
+    capturedFromBike = [msg for msg in captured if msg.channel == "microchip"]
 
     def count(cap):
         ids = [msg.arbitration_id for msg in cap]
@@ -37,7 +37,7 @@ def analyse():
                                 countedBatteryIDs.values(),
                                 countedBikeIDs.keys(),
                                 countedBikeIDs.values()],
-                          index=['BatteryID', 'Count', 'BikeID', 'Count'])
+                          index=['KvaserID', 'Count', 'MicrochipID', 'Count'])
 
     df = df.transpose()
 
